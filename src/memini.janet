@@ -1,12 +1,19 @@
+(import cmd)
 (import spork/path)
 (import spork/json)
+(import spork/rawterm)
 (use judge)
 
 (def tmpdir "/tmp/memini")
-(def ttl 30)
+
+(def color-blue "\e[1;34m")
+(def color-yellow "\e[1;33m")
+(def color-clear "\e[1;0m")
 
 (defn info [& xs]
-  (eprint "\e[1;34m" ;xs "\e[0m"))
+  (eprint color-blue ;xs color-clear))
+(defn warn [& xs]
+  (eprint color-yellow ;xs color-clear))
 
 (defn formatDuration [seconds]
   (def minutes (math/floor (/ seconds 60)))
@@ -14,22 +21,27 @@
   (cond
     (< seconds 60) (string seconds "s")
     (< minutes 60) (string minutes "min")
+    (< hours 24) (string hours "h " (% minutes 60) "min")
     (string hours "h")))
 
 (test (formatDuration 13) "13s")
 (test (formatDuration 60) "1min")
 (test (formatDuration 121) "2min")
-(test (formatDuration (* 60 60)) "1h")
+(test (formatDuration 3800) "1h 3min")
 (test (formatDuration (* 60 60 24 7)) "168h")
 
-(defn truncate [str len] (if (compare> (length str) 0 len) (string/slice str 0 len) str))
+(defn truncate [str len]
+  (cond
+    (nil? str) nil
+    (compare> (length str) len) (string (string/slice str 0 len) "...")
+    str))
 
 (defn cacheFilename [command]
   (def commandHash (math/abs (hash command)))
   (def preview (truncate (command 0) 10))
   (string commandHash "_" preview ".json"))
 
-(defn readMeta [path]
+(defn readMeta [path ttl]
   (def metaFile (file/open path :r))
   (def cache
     (if-not (nil? metaFile)
@@ -41,22 +53,16 @@
           (do
             (info "Using cache (" (formatDuration age) " old)")
             (meta "result"))
-          (info "Cache expired (" (formatDuration age) " old)")))
+          (warn "Cache expired (" (formatDuration age) " old)")))
       (do
-        (info "Uncached")))))
+        (info "Creating new cache entry with TTL of " (formatDuration ttl))))))
 
-(defn catchNil [f]
-  (def fiber (fiber/new f :e))
-  (def res (resume fiber))
-  (if (= (fiber/status fiber) :error) nil res))
-
-(defn main [& args]
+(defn memini-cache [command ttl]
   (os/mkdir tmpdir)
 
-  (def command (tuple/slice args 1))
   (def metaPath (path/join tmpdir (cacheFilename command)))
   (def cache (try
-               (readMeta metaPath)
+               (readMeta metaPath ttl)
                ([err] (info "Failed to read cache metadata: " err))))
 
   (if (nil? cache)
@@ -75,3 +81,38 @@
   # (:write metaFile (json/encode meta "  "))
   #
 )
+
+(defn menini-status []
+  (def entries (sort-by |($ "age")
+                        (map |(json/decode (slurp (path/join tmpdir $0))) (os/dir tmpdir))))
+
+  (def results
+    (map
+      (fn [meta]
+        (do
+          (def age (- (os/time) (meta "age")))
+          (def termWidth ((rawterm/size) 1))
+          (def termWidthAvailable (- termWidth (length "Result: ...")))
+          (string/format
+            ``
+            %sCommand: %s %s
+            Age: %s
+            Result: %s
+            ``
+            color-blue
+            (string/join (meta "command") " ")
+            color-clear
+            (formatDuration age)
+            (string/replace-all "\n" " " (or (truncate (meta "result") termWidthAvailable) "-")))))
+      entries))
+
+  (print (string ;(interpose "\n\n" results))))
+
+(cmd/main
+  (cmd/fn
+    [--ttl (optional :int++ 3600) "Time to live in seconds"
+     command (escape :string)]
+
+    (if (empty? command)
+      (menini-status)
+      (memini-cache command ttl))))

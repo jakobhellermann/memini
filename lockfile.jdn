@@ -1,2 +1,4 @@
-@[{:url "https://github.com/janet-lang/pkgs.git" :tag "ce9de2a1978a9bce3f7823d678574b4bb86bc9e6" :type :git}
+@[{:url "https://github.com/ianthehenry/cmd" :tag "b4308de361d0f90dd96cc0f9a8dc6881e0e851c6" :type :git}
+  {:url "https://github.com/ianthehenry/judge.git" :tag "612c3f41bbb75649515d6b0bdcf6116419030fa6" :type :git}
+  {:url "https://github.com/janet-lang/pkgs.git" :tag "ce9de2a1978a9bce3f7823d678574b4bb86bc9e6" :type :git}
   {:url "https://github.com/janet-lang/spork.git" :tag "18938c57212c8d4dc0a37b6ea10b8b859aad7518" :type :git}]
