@@ -15,18 +15,25 @@
 (defn warn [& xs]
   (eprint color-yellow ;xs color-clear))
 
+
 (defn formatDuration [seconds]
   (def minutes (math/floor (/ seconds 60)))
   (def hours (math/floor (/ minutes 60)))
+
+  (defn ifnotzero [a unit]
+    (def remainder (% a 60))
+    (if (zero? remainder) ""
+      (string " " remainder unit)))
+
   (cond
     (< seconds 60) (string seconds "s")
-    (< minutes 60) (string minutes "min")
-    (< hours 24) (string hours "h " (% minutes 60) "min")
+    (< minutes 60) (string minutes "min" (ifnotzero seconds "s"))
+    (< hours 24) (string hours "h" (ifnotzero minutes "min"))
     (string hours "h")))
 
 (test (formatDuration 13) "13s")
 (test (formatDuration 60) "1min")
-(test (formatDuration 121) "2min")
+(test (formatDuration 121) "2min 1s")
 (test (formatDuration 3800) "1h 3min")
 (test (formatDuration (* 60 60 24 7)) "168h")
 
