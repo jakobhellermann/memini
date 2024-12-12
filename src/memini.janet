@@ -95,11 +95,7 @@
                  :result output})
       (spit metaPath (json/encode meta "  ")))
     (do
-      (prin cache)))
-
-  # (:write metaFile (json/encode meta "  "))
-  #
-)
+      (prin cache))))
 
 (defn menini-status []
   (os/mkdir tmpdir)
