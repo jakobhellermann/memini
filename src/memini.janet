@@ -64,6 +64,18 @@
       (do
         (info "Creating new cache entry with TTL of " (formatDuration ttl))))))
 
+(defn shellwrap [cmd]
+  (cond
+    (> (length cmd) 1) cmd
+    (nil? (string/find " " (cmd 0))) cmd
+    ["sh" "-c" (string/join cmd " ")]))
+
+(test (shellwrap ["date" "+V%H"]) ["date" "+V%H"])
+(test (shellwrap ["cmd --json | jq"]) ["sh" "-c" "cmd --json | jq"])
+(test (shellwrap ["echo hi"]) ["sh" "-c" "echo hi"])
+(test (shellwrap ["cat" "with-space"]) ["cat" "with-space"])
+(test (shellwrap ["single"]) ["single"])
+
 (defn memini-cache [command ttl]
   (os/mkdir tmpdir)
 
@@ -124,4 +136,4 @@
 
     (if (empty? command)
       (menini-status)
-      (memini-cache command ttl))))
+      (memini-cache (shellwrap command) ttl))))
