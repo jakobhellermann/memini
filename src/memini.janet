@@ -90,6 +90,8 @@
 )
 
 (defn menini-status []
+  (os/mkdir tmpdir)
+
   (def entries (sort-by |($ "age")
                         (map |(json/decode (slurp (path/join tmpdir $0))) (os/dir tmpdir))))
 
