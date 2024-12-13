@@ -97,7 +97,7 @@
     (do
       (prin cache))))
 
-(defn menini-status []
+(defn memini-status []
   (os/mkdir tmpdir)
 
   (def entries (sort-by |($ "age")
@@ -126,10 +126,17 @@
   (print (string ;(interpose "\n\n" results))))
 
 (cmd/main
-  (cmd/fn
-    [--ttl (optional :int++ 3600) "Time to live in seconds"
-     command (escape :string)]
+  (cmd/fn "Drop-in shell command memoizer"
+          [--ttl (optional :int++ 3600) "Time to live in seconds (defaults to 3600)"
+           command (escape :string)
 
-    (if (empty? command)
-      (menini-status)
-      (memini-cache (shellwrap command) ttl))))
+           --help (effect (fn []
+                            (print ``A drop-in shell command memoizer
+                                   Usage: memini [COMMAND...]
+
+                                   Options:
+                                    [--ttl INT] : Time to live in seconds (defaults to 3600)``)
+                            (os/exit 0)))]
+          (cond
+            (empty? command) (memini-status)
+            (memini-cache (shellwrap command) ttl))))
